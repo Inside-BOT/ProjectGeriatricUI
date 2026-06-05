@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Configuration Panel</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .theme-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.6);
+        }
+        /* Smooth height transition for dropdowns */
+        .dropdown-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, padding 0.35s ease;
+            opacity: 0;
+        }
+        .dropdown-content.open {
+            max-height: 3000px; /* High enough to accommodate nested components */
+            opacity: 1;
+        }
+        
+        /* Smooth fade-in for primary tab panels to prevent vertical jolting */
+        .tab-panel {
+            display: none;
+            opacity: 0;
+        }
+        .tab-panel.open {
+            display: block;
+            animation: tabFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes tabFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Prevent scrollbar layout shifting */
+        #app-card {
+            scrollbar-gutter: stable;
+        }
+        
+        /* Modern backdrop/glass styles */
+        .tab-btn {
+            position: relative;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: currentColor;
+            transition: width 0.25s ease, left 0.25s ease;
+            border-top-left-radius: 2px;
+            border-top-right-radius: 2px;
+        }
+        .tab-btn.active::after {
+            width: 80%;
+            left: 10%;
+        }
+    </style>
+</head>
+<body class="bg-[#E8F1F8] text-gray-800 h-screen flex items-stretch p-0 theme-transition overflow-hidden">
+
+    <!-- Main Container - Viewport Constrained with Scrolling Content Enablement -->
+    <div id="app-card" class="w-full h-screen bg-[#E9ECEF] dark:bg-zinc-950 shadow-none border-0 overflow-y-auto theme-transition flex flex-col relative p-0 m-0">
+        
+        <!-- STICKY HEADER WRAPPER: Handles scroll-up reveal animation smoothly -->
+        <div id="sticky-header-container" class="sticky top-0 z-30 transition-transform duration-350 ease-in-out shrink-0 w-full">
+            <!-- HEADER -->
+            <header id="app-header" class="bg-[#2D6CDF] dark:bg-[#1E3A8A] text-white py-4 px-6 flex items-center justify-between border-b-2 border-[#1E3A5F] dark:border-zinc-900 shrink-0 relative h-[72px] shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/10 rounded-xl">
+                        <i data-lucide="sliders" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 id="header-title" class="text-xl md:text-2xl font-extrabold tracking-tight transition-all duration-150 text-left">AI Assistant Panel</h1>
+                        <p class="text-[10px] md:text-xs text-white/80 font-medium">Configure companion system behavior</p>
+                    </div>
+                </div>
+                
+                <!-- Theme toggle pill -->
+                <button id="theme-pill" class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition active:scale-95 duration-200 bg-white/15 hover:bg-white/25 border border-white/20" onclick="cycleThemeMode()">
+                    <i data-lucide="sun" id="theme-icon" class="w-3.5 h-3.5"></i>
+                    <span id="theme-label">Light Mode</span>
+                </button>
+            </header>
+
+            <!-- SUB-HEADER TAB NAVIGATION: AI Config, Contacts, and Calendar lined up horizontally -->
+            <div class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 shadow-sm">
+                <div class="max-w-6xl mx-auto px-4 grid grid-cols-3 gap-1 md:gap-4">
+                    <button onclick="toggleMainTab('ai-config')" id="tab-tab-ai-config" class="tab-btn active py-4 px-2 text-center font-extrabold text-sm md:text-base flex flex-col md:flex-row items-center justify-center gap-2 text-[#2D6CDF] dark:text-sky-400">
+                        <i data-lucide="cpu" class="w-5 h-5"></i>
+                        <span>AI Config</span>
+                    </button>
+                    <button onclick="toggleMainTab('contacts')" id="tab-tab-contacts" class="tab-btn py-4 px-2 text-center font-extrabold text-sm md:text-base flex flex-col md:flex-row items-center justify-center gap-2 text-gray-500 dark:text-zinc-400">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                        <span>Contacts</span>
+                    </button>
+                    <button onclick="toggleMainTab('calendar')" id="tab-tab-calendar" class="tab-btn py-4 px-2 text-center font-extrabold text-sm md:text-base flex flex-col md:flex-row items-center justify-center gap-2 text-gray-500 dark:text-zinc-400">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>Calendar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- APP CONTENT AREA -->
+        <main class="flex-1 p-4 md:p-8 relative flex flex-col items-center">
+            
+            <!-- Standard constraints for internal readability inside the fullscreen workspace -->
+            <div class="w-full max-w-4xl space-y-6">
+
+                <!-- CATEGORY 1: AI CONFIG CONTENT DROPDOWN -->
+                <div id="ai-config-dropdown" class="tab-panel open space-y-4">
+                    <div class="bg-white dark:bg-zinc-900 border-2 border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-md">
+                        <div class="mb-4 pb-2 border-b border-gray-100 dark:border-zinc-805 flex justify-between items-center">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-[#1E3A5F] dark:text-sky-400">System Personality & Key Options</h2>
+                                <p class="text-xs text-gray-500 dark:text-zinc-400">Adjust how your smart system responds and triggers conversations.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Sub-dropdown: Personality -->
+                            <div class="border-2 rounded-xl border-gray-200 dark:border-zinc-800 overflow-hidden bg-white/20 dark:bg-zinc-900/10">
+                                <button onclick="toggleSubAccordion('personality')" class="w-full text-left p-4 font-bold text-sm md:text-base flex justify-between items-center bg-gray-50 dark:bg-zinc-900/60 hover:bg-gray-100 dark:hover:bg-zinc-800/80 text-gray-800 dark:text-zinc-100 transition">
+                                    <span class="flex items-center gap-2"><i data-lucide="smile" class="w-4 h-4 text-[#2D6CDF] dark:text-sky-400"></i> Personality Description</span>
+                                    <i id="personality-chevron" data-lucide="plus" class="w-4 h-4 transition-transform duration-300"></i>
+                                </button>
+                                <div id="personality-dropdown" class="dropdown-content bg-transparent">
+                                    <div class="p-4 space-y-3 font-sans">
+                                        <p class="text-xs font-normal tracking-wide leading-relaxed text-gray-500 dark:text-zinc-400">
+                                            Design a warm and customized persona for your AI companion.
+                                        </p>
+                                        <textarea id="personality-input" class="w-full h-32 p-3 rounded-xl border-2 border-gray-200 dark:border-zinc-700 bg-[#E9ECEF] dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2D6CDF] dark:focus:ring-sky-400 focus:outline-none text-xs tracking-wide leading-relaxed font-normal resize-none transition duration-150" placeholder="Personality description..."></textarea>
+                                        <button onclick="savePersonality()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-[#2D6CDF] hover:bg-[#1E3A5F] dark:bg-sky-600 dark:hover:bg-sky-700 text-white transition active:scale-95 shadow-md flex items-center justify-center gap-2">
+                                            <i data-lucide="save" class="w-4 h-4"></i> Save Personality
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-dropdown: Voice -->
+                            <div class="border-2 rounded-xl border-gray-200 dark:border-zinc-800 overflow-hidden bg-white/20 dark:bg-zinc-900/10">
+                                <button onclick="toggleSubAccordion('voice')" class="w-full text-left p-4 font-bold text-sm md:text-base flex justify-between items-center bg-gray-50 dark:bg-zinc-900/60 hover:bg-gray-100 dark:hover:bg-zinc-800/80 text-gray-800 dark:text-zinc-100 transition">
+                                    <span class="flex items-center gap-2"><i data-lucide="volume-2" class="w-4 h-4 text-[#2D6CDF] dark:text-sky-400"></i> Voice Custom Key</span>
+                                    <i id="voice-chevron" data-lucide="plus" class="w-4 h-4 transition-transform duration-300"></i>
+                                </button>
+                                <div id="voice-dropdown" class="dropdown-content bg-transparent">
+                                    <div class="p-4 space-y-3 font-sans">
+                                        <p class="text-xs font-normal tracking-wide leading-relaxed text-gray-500 dark:text-zinc-400">
+                                            Paste your ElevenLabs speaker custom key below.
+                                        </p>
+                                        <div class="relative">
+                                            <input id="voice-input" type="text" class="w-full p-3 pr-10 rounded-xl border-2 border-gray-200 dark:border-zinc-700 bg-[#E9ECEF] dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2D6CDF] dark:focus:ring-sky-400 focus:outline-none font-sans text-xs tracking-widest transition duration-150" placeholder="Voice key..." />
+                                            <button onclick="document.getElementById('voice-input').value=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                                <i data-lucide="x" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                        <button onclick="saveVoice()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-[#2D6CDF] hover:bg-[#1E3A5F] dark:bg-sky-600 dark:hover:bg-sky-700 text-white transition active:scale-95 shadow-md flex items-center justify-center gap-2">
+                                            <i data-lucide="save" class="w-4 h-4"></i> Update Voice Key
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-dropdown: Keywords -->
+                            <div class="border-2 rounded-xl border-gray-200 dark:border-zinc-800 overflow-hidden bg-white/20 dark:bg-zinc-900/10">
+                                <button onclick="toggleSubAccordion('keywords')" class="w-full text-left p-4 font-bold text-sm md:text-base flex justify-between items-center bg-gray-50 dark:bg-zinc-900/60 hover:bg-gray-100 dark:hover:bg-zinc-800/80 text-gray-800 dark:text-zinc-100 transition">
+                                    <span class="flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-[#2D6CDF] dark:text-sky-400"></i> Wake & Dismissal Keywords</span>
+                                    <i id="keywords-chevron" data-lucide="plus" class="w-4 h-4 transition-transform duration-300"></i>
+                                </button>
+                                <div id="keywords-dropdown" class="dropdown-content bg-transparent">
+                                    <div class="p-4 space-y-3">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-[10px] font-bold uppercase tracking-wider mb-1 text-[#2D6CDF] dark:text-sky-400">Wake Word</label>
+                                                <input id="start-word" type="text" class="w-full p-2.5 rounded-lg border-2 border-gray-200 dark:border-zinc-750 bg-[#E9ECEF] dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#2D6CDF] focus:outline-none font-bold text-xs" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold uppercase tracking-wider mb-1 text-[#2D6CDF] dark:text-sky-400">Dismissal Word</label>
+                                                <input id="end-word" type="text" class="w-full p-2.5 rounded-lg border-2 border-gray-200 dark:border-zinc-750 bg-[#E9ECEF] dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#2D6CDF] focus:outline-none font-bold text-xs" />
+                                            </div>
+                                        </div>
+                                        <button onclick="saveWords()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-[#2D6CDF] hover:bg-[#1E3A5F] dark:bg-sky-600 dark:hover:bg-sky-700 text-white transition active:scale-95 shadow-md flex items-center justify-center gap-2">
+                                            <i data-lucide="save" class="w-4 h-4"></i> Apply Keywords
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CATEGORY 2: CONTACTS CONTENT DROPDOWN -->
+                <div id="contacts-dropdown" class="tab-panel space-y-4">
+                    <div class="bg-white dark:bg-zinc-900 border-2 border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-md">
+                        <div class="mb-4 pb-2 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-[#1E3A5F] dark:text-sky-400">System Contacts Directory</h2>
+                                <p class="text-xs text-gray-500 dark:text-zinc-400">Manage companions and trusted direct dials.</p>
+                            </div>
+                            <button onclick="toggleAddContactForm()" class="p-2.5 bg-[#2D6CDF] hover:bg-[#1E3A5F] dark:bg-sky-600 dark:hover:bg-sky-700 text-white rounded-xl transition active:scale-95 shadow-md flex items-center justify-center" title="Add Contact">
+                                <i id="add-contact-icon" data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Inline Add Contact Form Dropdown -->
+                        <div id="add-contact-panel" class="dropdown-content border-2 border-dashed rounded-xl p-4 bg-gray-50 dark:bg-zinc-900/40 border-gray-300 dark:border-zinc-800 mb-4">
+                            <form id="contact-form" onsubmit="saveContact(event)" class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider mb-1 text-gray-500 dark:text-zinc-400">Contact Name</label>
+                                    <input id="contact-name" type="text" required class="w-full p-2.5 rounded-lg border bg-[#E9ECEF] dark:bg-zinc-800 text-gray-900 dark:text-white border-gray-300 dark:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-[#2D6CDF] text-xs font-bold" placeholder="e.g. Mary Jane" />
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider mb-1 text-gray-500 dark:text-zinc-400">Telephone Number</label>
+                                    <input id="contact-phone" type="tel" required class="w-full p-2.5 rounded-lg border bg-[#E9ECEF] dark:bg-zinc-800 text-gray-900 dark:text-white border-gray-300 dark:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-[#2D6CDF] text-xs font-bold" placeholder="e.g. +44 1234 567890" />
+                                </div>
+                                <button type="submit" class="w-full py-2.5 rounded-xl text-xs font-bold bg-[#2D6CDF] hover:bg-[#1E3A5F] dark:bg-sky-600 dark:hover:bg-sky-700 text-white transition active:scale-95 shadow-md flex items-center justify-center gap-1">
+                                    <i data-lucide="save" class="w-4 h-4"></i> Save Contact
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Contacts List -->
+                        <div id="contacts-list-container" class="space-y-2 max-h-[400px] overflow-y-auto">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CATEGORY 3: CALENDAR CONTENT DROPDOWN -->
+                <div id="calendar-dropdown" class="tab-panel space-y-4">
+                    <div class="bg-white dark:bg-zinc-900 border-2 border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-md">
+                        <div class="mb-4 pb-2 border-b border-gray-100 dark:border-zinc-800">
+                            <h2 class="text-lg font-extrabold text-[#1E3A5F] dark:text-sky-400">Schedules & Routines</h2>
+                            <p class="text-xs text-gray-500 dark:text-zinc-400">Establish reminders, alerts, and yearly milestone triggers.</p>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- Launch Widget: Single Event Calendar - Triggers Full Screen Layer -->
+                            <div class="border-2 rounded-2xl border-gray-200 dark:border-zinc-800 overflow-hidden bg-white/20 dark:bg-zinc-900/10">
+                                <button onclick="openFullCalendarOverlay()" class="w-full text-left p-5 font-bold flex justify-between items-center bg-gray-50 dark:bg-zinc-900/60 hover:bg-gray-100 dark:hover:bg-zinc-800/80 transition shadow-sm text-gray-855 dark:text-zinc-100">
+                                    <span class="flex items-center gap-3">
+                                        <i data-lucide="calendar" class="w-6 h-6 text-[#2D6CDF] dark:text-sky-400"></i>
+                                        <div>
+                                            <span class="block text-sm md:text-base font-black text-gray-800 dark:text-white">Unified System Calendar</span>
+                                            <span class="block text-xs text-gray-400 dark:text-zinc-450 font-normal">View daily routines, weekly repeating patterns, and unique events in one calendar grid</span>
+                                        </div>
+                                    </span>
+                                    <span class="px-3 py-1.5 border border-[#2D6CDF] dark:border-sky-400 text-xs text-[#2D6CDF] dark:text-sky-400 font-extrabold rounded-xl transition active:scale-95 bg-transparent flex items-center gap-1 shadow-sm shrink-0">
+                                        Launch Calendar
+                                    </span>
+                                </button>
+                            </div>
+
+                            <!-- Launcher Cards for all Repeated Schedule Layers -->
+                            <div class="border-t border-gray-200 dark:border-zinc-800 pt-5">
+                                <h3 class="text-sm font-bold text-gray-500 dark:text-zinc-400 mb-4 uppercase tracking-widest font-mono">Repeated Schedules Workspaces</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <!-- Launch Card: Daily Routines -->
+                                    <button onclick="openRepeatedOverlay('daily')" class="p-5 text-left border-2 border-gray-200 dark:border-zinc-800 rounded-2xl bg-gray-50 dark:bg-zinc-900/30 hover:border-[#2D6CDF] dark:hover:border-sky-400 transition shadow-sm group">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="p-3 bg-[#2D6CDF]/10 dark:bg-sky-500/10 text-[#2D6CDF] dark:text-sky-400 rounded-xl">
+                                                <i data-lucide="clock" class="w-6 h-6"></i>
+                                            </span>
+                                            <span class="text-[10px] font-mono font-bold tracking-widest text-gray-400 dark:text-zinc-500 uppercase">Layer</span>
+                                        </div>
+                                        <h3 class="font-extrabold text-base text-gray-800 dark:text-white group-hover:text-[#2D6CDF] dark:group-hover:text-sky-400 transition">Daily Routines</h3>
+                                        <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Manage daily medication, meals, walks, and alarms.</p>
+                                    </button>
+                                    
+                                    <!-- Launch Card: Weekly Schedules -->
+                                    <button onclick="openRepeatedOverlay('weekly')" class="p-5 text-left border-2 border-gray-250 dark:border-zinc-800 rounded-2xl bg-gray-50 dark:bg-zinc-900/30 hover:border-[#2D6CDF] dark:hover:border-sky-400 transition shadow-sm group">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="p-3 bg-[#2D6CDF]/10 dark:bg-sky-500/10 text-[#2D6CDF] dark:text-sky-400 rounded-xl">
+                                                <i data-lucide="calendar-days" class="w-6 h-6"></i>
+                                            </span>
+                                            <span class="text-[10px] font-mono font-bold tracking-widest text-gray-400 dark:text-zinc-500 uppercase">Layer</span>
+                                        </div>
+                                        <h3 class="font-extrabold text-base text-gray-800 dark:text-white group-hover:text-[#2D6CDF] dark:group-hover:text-sky-400 transition">Weekly Schedules</h3>
+                                        <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Set events repeating on specific days of the week.</p>
+                                    </button>
+                                    
+                                    <!-- Launch Card: Monthly Occurrences -->
+                                    <button onclick="openRepeatedOverlay('monthly')" class="p-5 text-left border-2 border-gray-250 dark:border-zinc-800 rounded-2xl bg-gray-50 dark:bg-zinc-900/30 hover:border-[#2D6CDF] dark:hover:border-sky-400 transition shadow-sm group">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="p-3 bg-[#2D6CDF]/10 dark:bg-sky-500/10 text-[#2D6CDF] dark:text-sky-400 rounded-xl">
+                                                <i data-lucide="calendar-range" class="w-6 h-6"></i>
+                                            </span>
+                                            <span class="text-[10px] font-mono font-bold tracking-widest text-gray-400 dark:text-zinc-500 uppercase">Layer</span>
+                                        </div>
+                                        <h3 class="font-extrabold text-base text-gray-800 dark:text-white group-hover:text-[#2D6CDF] dark:group-hover:text-sky-400 transition">Monthly Occurrences</h3>
+                                        <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Configure tasks happening on specific calendar dates.</p>
+                                    </button>
+                                    
+                                    <!-- Launch Card: Yearly Reminders -->
+                                    <button onclick="openRepeatedOverlay('yearly')" class="p-5 text-left border-2 border-gray-255 dark:border-zinc-800 rounded-2xl bg-gray-50 dark:bg-zinc-900/30 hover:border-[#2D6CDF] dark:hover:border-sky-400 transition shadow-sm group">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="p-3 bg-[#2D6CDF]/10 dark:bg-sky-500/10 text-[#2D6CDF] dark:text-sky-400 rounded-xl">
+                                                <i data-lucide="milestone" class="w-6 h-6"></i>
+                                            </span>
+                                            <span class="text-[10px] font-mono font-bold tracking-widest text-gray-400 dark:text-zinc-500 uppercase">Layer</span>
+                                        </div>
+                                        <h3 class="font-extrabold text-base text-gray-800 dark:text-white group-hover:text-[#2D6CDF] dark:group-hover:text-sky-400 transition">Yearly Reminders</h3>
+                                        <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Store birthdays, anniversaries, and custom yearly events.</p>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- FULL CALENDAR SCREEN OVERLAY LAYER (Absolute Screen Space and Visibility Guarantee) -->
+    <div id="full-calendar-overlay" class="fixed inset-0 bg-[#E8F1F8] dark:bg-[#121212] z-40 hidden flex-col theme-transition overflow-y-auto pb-12">
+        <!-- Overlay Sticky Header Wrapper -->
+        <div id="calendar-header-container" class="sticky top-0 z-50 w-full transition-transform duration-355 ease-in-out shrink-0">
+            <header class="bg-[#2D6CDF] dark:bg-[#1E3A8A] text-white py-4 px-6 flex items-center justify-between shadow-md h-[76px]">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/10 rounded-xl">
+                        <i data-lucide="calendar" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-extrabold tracking-tight">Interactive Calendar Workspace</h2>
+                        <p class="text-xs text-white/80">Manage appointment times and notes on a fluid full-screen layout</p>
+                    </div>
+                </div>
+                <!-- Consistent stylized Back Box Button -->
+                <button onclick="closeFullCalendarOverlay()" class="px-5 py-2.5 bg-white/15 hover:bg-white/25 border border-white/30 rounded-xl text-xs font-black tracking-widest transition active:scale-95 uppercase font-mono shadow-sm">
+                    Back
+                </button>
+            </header>
+        </div>
+
+        <div class="flex-1 p-4 md:p-8 flex flex-col items-center justify-start mt-4">
+            <div class="w-full max-w-5xl bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-zinc-800 rounded-3xl p-6 shadow-2xl flex flex-col min-h-[500px]">
+                <div id="single-time-calendar-container" class="w-full h-full flex-1">
+                    <!-- Dynamic Calendar Grid Injected Here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPEATED SCHEDULES SEPARATE OVERLAY LAYER -->
+    <div id="repeated-overlay" class="fixed inset-0 bg-[#E8F1F8] dark:bg-[#121212] z-40 hidden flex-col theme-transition overflow-y-auto pb-12">
+        <!-- Overlay Sticky Header Wrapper -->
+        <div id="repeated-header-container" class="sticky top-0 z-50 w-full transition-transform duration-355 ease-in-out shrink-0">
+            <header id="repeated-overlay-header" class="bg-[#2D6CDF] dark:bg-[#1E3A8A] text-white py-4 px-6 flex items-center justify-between shadow-md h-[76px]">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/10 rounded-xl">
+                        <i id="repeated-overlay-icon" data-lucide="refresh-cw" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h2 id="repeated-overlay-title" class="text-lg md:text-xl font-extrabold tracking-tight">Repeated Schedule Workspace</h2>
+                        <p id="repeated-overlay-subtitle" class="text-xs text-white/80">Manage your recurring timers and system schedules</p>
+                    </div>
+                </div>
+                <!-- Consistent stylized Back Box Button -->
+                <button onclick="closeRepeatedOverlay()" class="px-5 py-2.5 bg-white/15 hover:bg-white/25 border border-white/30 rounded-xl text-xs font-black tracking-widest transition active:scale-95 uppercase font-mono shadow-sm">
+                    Back
+                </button>
+            </header>
+        </div>
+
+        <div class="flex-1 p-4 md:p-8 flex flex-col items-center justify-start mt-4">
+            <div class="w-full max-w-5xl bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-zinc-800 rounded-3xl p-6 shadow-2xl flex flex-col min-h-[520px]" id="repeated-overlay-content">
+                <!-- Dynamic Repeated Content Views go here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL OVERLAY FOR EVENTS TABLE -->
+    <div id="calendar-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div id="modal-box" class="bg-[#E9ECEF] dark:bg-zinc-900 text-gray-900 dark:text-gray-100 rounded-2xl p-6 border-2 border-[#2D6CDF] dark:border-sky-500 w-full max-w-md shadow-2xl transform scale-95 opacity-0 transition-all duration-200 max-h-[90%] flex flex-col animate-none">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-200 dark:border-zinc-800 shrink-0">
+                <div>
+                    <h3 class="font-extrabold text-lg text-[#1E3A5F] dark:text-sky-400" id="modal-title">Selected Date</h3>
+                    <p class="text-[10px] text-gray-400 dark:text-zinc-400 font-semibold uppercase tracking-wider" id="modal-subtitle">Schedule Manager</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-150 dark:hover:bg-zinc-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Events List Container -->
+            <div class="flex-1 overflow-y-auto mb-4 min-h-[120px]" id="modal-events-list"></div>
+
+            <!-- New Event Form -->
+            <div class="border-t border-gray-200 dark:border-zinc-800 pt-3 shrink-0">
+                <p class="text-xs font-bold text-[#1E3A5F] dark:text-sky-400 mb-2 uppercase tracking-wide">Add New Event</p>
+                <form id="new-event-form" onsubmit="handleFormSubmit(event)" class="space-y-2">
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="time" id="event-time" required class="col-span-1 p-2.5 text-xs border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#2D6CDF]">
+                        <input type="text" id="event-message" placeholder="Message/Reminders..." required class="col-span-2 p-2.5 text-xs border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-[#2D6CDF]">
+                    </div>
+                    <button type="submit" class="w-full bg-[#2D6CDF] hover:bg-[#1E3A5F] dark:bg-sky-600 dark:hover:bg-sky-700 text-white py-2.5 rounded-lg text-xs font-extrabold transition active:scale-95 flex items-center justify-center gap-1 shadow-md">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add to Schedule
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm font-semibold opacity-0 translate-y-4 pointer-events-none transition-all duration-300 z-50">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toast-msg">Settings saved successfully</span>
+    </div>
+
+    <script>
+        // --- Core State Storage ---
+        let appData = {
+            personality: 'You are a friendly, helpful and caring assistant who is aimed to help an elderly person with possible loneliness with short informative replies designed to be spoken with no involvement in physical tasks. Answers in British English with metric units.',
+            voice: 'RltfKVMDaAfhpmJT415L',
+            words: {
+                start: 'Google',
+                end: 'bye'
+            },
+            contacts: [],
+            mode: 'Light', // 'Light', 'Dark', 'Auto'
+            events: {}, // Starting single events cleared
+            dailyEvents: [], // Starting daily routines cleared
+            weeklyEvents: {}, // Starting weekly patterns cleared
+            monthlyEvents: {}, // Starting monthly milestones cleared
+            yearlyEvents: {}, // Starting yearly highlights cleared
+            exceptions: {} // Excluded specific recurrences stored as exceptions
+        };
+
+        // Calendar constants
+        const months = [
+            { name: "January", days: 31 },
+            { name: "February", days: 28 },
+            { name: "March", days: 31 },
+            { name: "April", days: 30 },
+            { name: "May", days: 31 },
+            { name: "June", days: 30 },
+            { name: "July", days: 31 },
+            { name: "August", days: 31 },
+            { name: "September", days: 30 },
+            { name: "October", days: 31 },
+            { name: "November", days: 30 },
+            { name: "December", days: 31 }
+        ];
+        const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth();
+
+        let activeModalScope = {
+            type: '', 
+            key: ''   
+        };
+
+        let activeRepeatedType = ''; // 'daily', 'weekly', 'monthly', 'yearly'
+
+        // --- Theme Definitions ---
+        const themes = {
+            light: {
+                bg: '#E8F1F8',
+                cardBg: '#E9ECEF', 
+                primary: '#2D6CDF',
+                text: '#1A1A1A',
+                border: '#1E3A5F',
+                secondaryText: '#4A5568',
+                inputBg: '#DFE2E6'
+            },
+            dark: {
+                bg: '#121212',
+                cardBg: '#1C1C1E',
+                primary: '#1E3A8A', // Calm, dark steel blue
+                text: '#F4F4F5', 
+                border: '#27272A',
+                secondaryText: '#A1A1AA',
+                inputBg: '#2D2D2D'
+            }
+        };
+
+        // --- App Setup ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalData();
+            applyTheme();
+            initializeStaticFields();
+            renderAllDropdowns();
+            lucide.createIcons();
+            initScrollBanners();
+        });
+
+        // --- Smart Scroll Banner Animation Logic ---
+        function initScrollBanners() {
+            // 1. Main viewport scroll logic (listening to #app-card instead of main)
+            const mainScroll = document.getElementById('app-card');
+            const mainHeader = document.getElementById('sticky-header-container');
+            setupScrollBanner(mainScroll, mainHeader, 72); 
+
+            // 2. Full Calendar Overlay Header Slide logic
+            const calScroll = document.getElementById('full-calendar-overlay');
+            const calHeader = document.getElementById('calendar-header-container');
+            setupScrollBanner(calScroll, calHeader, 76);
+
+            // 3. Repeated Schedules Overlay Header Slide logic
+            const repScroll = document.getElementById('repeated-overlay');
+            const repHeader = document.getElementById('repeated-header-container');
+            setupScrollBanner(repScroll, repHeader, 76);
+        }
+
+        // Handles the slide translation of headers depending on scroll actions
+        function setupScrollBanner(scrollEl, headerEl, threshold) {
+            if (!scrollEl || !headerEl) return;
+            let lastScrollTop = 0;
+            
+            scrollEl.addEventListener('scroll', () => {
+                const scrollTop = scrollEl.scrollTop;
+                // If scrolling down and scrolled past threshold, translate up to hide header
+                if (scrollTop > lastScrollTop && scrollTop > threshold) {
+                    headerEl.style.transform = `translateY(-${threshold}px)`;
+                } else {
+                    // Scrolling up (by even 1px) or at top, translate instantly back to 0
+                    headerEl.style.transform = 'translateY(0)';
+                }
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+            });
+        }
+
+        // --- Local Storage Management ---
+        function loadLocalData() {
+            const saved = localStorage.getItem('ai_assistant_settings_v5');
+            if (saved) {
+                try {
+                    appData = { ...appData, ...JSON.parse(saved) };
+                } catch(e) {
+                    console.error("Could not parse saved configurations, using default.");
+                }
+            }
+        }
+
+        function saveLocalData() {
+            localStorage.setItem('ai_assistant_settings_v5', JSON.stringify(appData));
+        }
+
+        // --- Toast Alerts ---
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+            }, 2500);
+        }
+
+        // --- Theme Management ---
+        function cycleThemeMode() {
+            const currentMode = appData.mode;
+            let nextMode = 'Light';
+            if (currentMode === 'Light') nextMode = 'Dark';
+            else if (currentMode === 'Dark') nextMode = 'Automatic';
+            
+            appData.mode = nextMode;
+            saveLocalData();
+            applyTheme();
+            showToast(`${nextMode} display mode active`);
+        }
+
+        function getActiveTheme() {
+            if (appData.mode === 'Light') return 'light';
+            if (appData.mode === 'Dark') return 'dark';
+            const hours = new Date().getHours();
+            return (hours >= 20 || hours < 7) ? 'dark' : 'light';
+        }
+
+        function applyTheme() {
+            const mode = getActiveTheme();
+            const active = themes[mode];
+            
+            document.documentElement.classList.toggle('dark', mode === 'dark');
+            document.body.classList.toggle('dark', mode === 'dark');
+            
+            document.body.style.backgroundColor = active.bg;
+            
+            const card = document.getElementById('app-card');
+            card.style.backgroundColor = active.cardBg;
+            card.style.color = active.text;
+
+            const header = document.getElementById('app-header');
+            header.style.backgroundColor = active.primary;
+            header.style.borderColor = active.border;
+
+            // Apply same header background dynamics to all separate overlay layers
+            document.getElementById('full-calendar-overlay').style.backgroundColor = active.bg;
+            document.getElementById('repeated-overlay').style.backgroundColor = active.bg;
+            document.querySelector('#full-calendar-overlay header').style.backgroundColor = active.primary;
+            document.querySelector('#repeated-overlay-header').style.backgroundColor = active.primary;
+
+            const themeLabel = document.getElementById('theme-label');
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (appData.mode !== "Automatic") {
+                themeLabel.textContent = `${appData.mode} Mode`;
+            } else {
+                themeLabel.textContent = `${appData.mode}`;
+            }
+
+            // Clean icon attribute and recreate
+            themeIcon.removeAttribute('data-lucide');
+            if (appData.mode === 'Light') {
+                themeIcon.setAttribute('data-lucide', 'sun');
+            } else if (appData.mode === 'Dark') {
+                themeIcon.setAttribute('data-lucide', 'moon');
+            } else {
+                themeIcon.setAttribute('data-lucide', 'laptop');
+            }
+            lucide.createIcons();
+            
+            // Re-render components to trigger perfect contrast styles dynamically
+            renderAllDropdowns();
+        }
+
+        // --- Interactive Tabs & Dropdowns ---
+        function toggleMainTab(targetId) {
+            const tabs = ['ai-config', 'contacts', 'calendar'];
+            
+            tabs.forEach(tab => {
+                const btn = document.getElementById(`tab-tab-${tab}`);
+                const panel = document.getElementById(`${tab}-dropdown`);
+                
+                if (tab === targetId) {
+                    btn.classList.add('active', 'text-[#2D6CDF]', 'dark:text-sky-400');
+                    btn.classList.remove('text-gray-500', 'dark:text-zinc-400');
+                    panel.classList.add('open');
+                } else {
+                    btn.classList.remove('active', 'text-[#2D6CDF]', 'dark:text-sky-400');
+                    btn.classList.add('text-gray-500', 'dark:text-zinc-400');
+                    
+                    if (panel.classList.contains('open')) {
+                        panel.classList.remove('open');
+                        recursiveCloseChildren(panel);
+                    }
+                }
+            });
+
+            // Cleanly escape and close workspace overlays whenever switching main tabs
+            closeFullCalendarOverlay();
+            closeRepeatedOverlay();
+        }
+
+        function recursiveCloseChildren(parentNode) {
+            const openChildren = parentNode.querySelectorAll('.dropdown-content.open');
+            openChildren.forEach(child => {
+                child.classList.remove('open');
+                
+                const triggerId = child.id.replace('-dropdown', '');
+                const chevron = document.getElementById(`${triggerId}-chevron`);
+                if (chevron) {
+                    chevron.setAttribute('data-lucide', 'plus');
+                    chevron.style.transform = 'rotate(0deg)';
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function toggleSubAccordion(id) {
+            const dropdown = document.getElementById(`${id}-dropdown`);
+            const chevron = document.getElementById(`${id}-chevron`);
+            const isClosing = dropdown.classList.contains('open');
+
+            if (isClosing) {
+                dropdown.classList.remove('open');
+                if (chevron) {
+                    chevron.setAttribute('data-lucide', 'plus');
+                    chevron.style.transform = 'rotate(0deg)';
+                }
+                recursiveCloseChildren(dropdown);
+            } else {
+                dropdown.classList.add('open');
+                if (chevron) {
+                    chevron.setAttribute('data-lucide', 'minus');
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function toggleAddContactForm() {
+            const panel = document.getElementById('add-contact-panel');
+            const icon = document.getElementById('add-contact-icon');
+            const isClosing = panel.classList.contains('open');
+
+            if (isClosing) {
+                panel.classList.remove('open');
+                icon.setAttribute('data-lucide', 'plus');
+            } else {
+                panel.classList.add('open');
+                icon.setAttribute('data-lucide', 'x');
+            }
+            lucide.createIcons();
+        }
+
+        // --- Data Binding & State Persistence ---
+        // Sets dynamic configurations back to state on start
+        function initializeStaticFields() {
+            document.getElementById('personality-input').value = appData.personality;
+            document.getElementById('voice-input').value = appData.voice;
+            document.getElementById('start-word').value = appData.words.start;
+            document.getElementById('end-word').value = appData.words.end;
+        }
+
+        // --- Contacts Directory ---
+        function renderContacts() {
+            const container = document.getElementById('contacts-list-container');
+            container.innerHTML = '';
+
+            if (appData.contacts.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center border-2 border-dashed border-gray-250 dark:border-zinc-800 rounded-2xl bg-white/40 dark:bg-zinc-900/40">
+                        <p class="text-xs text-gray-500 dark:text-zinc-400 font-medium">No companion or emergency contacts configured.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            appData.contacts.forEach((contact, index) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 border border-gray-250 dark:border-zinc-855 rounded-xl shadow-sm transition hover:shadow-md";
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 bg-[#2D6CDF]/10 text-[#2D6CDF] dark:bg-sky-400/15 dark:text-sky-400 font-black text-xs rounded-xl flex items-center justify-center">
+                            ${contact.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-800 dark:text-zinc-100">${contact.name}</h4>
+                            <p class="text-[10px] text-gray-500 dark:text-zinc-400 font-mono tracking-wide">${contact.phone}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteContact(${index})" class="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition" title="Delete Contact">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function saveContact(e) {
+            e.preventDefault();
+            const nameField = document.getElementById('contact-name');
+            const phoneField = document.getElementById('contact-phone');
+
+            appData.contacts.push({
+                name: nameField.value,
+                phone: phoneField.value
+            });
+
+            saveLocalData();
+            renderContacts();
+
+            nameField.value = '';
+            phoneField.value = '';
+            toggleAddContactForm();
+            showToast('Contact directory updated');
+        }
+
+        function deleteContact(index) {
+            appData.contacts.splice(index, 1);
+            saveLocalData();
+            renderContacts();
+            showToast('Contact removed');
+        }
+
+        // --- FULL CALENDAR SCREEN OVERLAY ---
+        function openFullCalendarOverlay() {
+            const overlay = document.getElementById('full-calendar-overlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            document.body.style.overflow = 'hidden'; 
+            renderCalendar();
+        }
+
+        function closeFullCalendarOverlay() {
+            const overlay = document.getElementById('full-calendar-overlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            document.body.style.overflow = ''; 
+        }
+
+        // --- Unified Calendar Compilation Engine ---
+        function getCombinedEventsForDate(year, month, day) {
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dateObj = new Date(year, month, day);
+            
+            const weekDaysEng = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const currentDayName = weekDaysEng[dateObj.getDay()];
+            
+            const dayOfMonth = day;
+            const yearlyKey = `${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            let combined = [];
+            
+            // 1. Single Events
+            if (appData.events && appData.events[dateKey]) {
+                appData.events[dateKey].forEach(e => combined.push({ ...e, source: 'Single' }));
+            }
+            
+            // 2. Daily Alarms/Routines
+            if (appData.dailyEvents) {
+                appData.dailyEvents.forEach(e => combined.push({ ...e, source: 'Daily' }));
+            }
+            
+            // 3. Weekly Reminders
+            if (appData.weeklyEvents && appData.weeklyEvents[currentDayName]) {
+                appData.weeklyEvents[currentDayName].forEach(e => combined.push({ ...e, source: 'Weekly' }));
+            }
+            
+            // 4. Monthly occurrences
+            if (appData.monthlyEvents && appData.monthlyEvents[dayOfMonth]) {
+                appData.monthlyEvents[dayOfMonth].forEach(e => combined.push({ ...e, source: 'Monthly' }));
+            }
+            
+            // 5. Yearly Reminders
+            if (appData.yearlyEvents && appData.yearlyEvents[yearlyKey]) {
+                appData.yearlyEvents[yearlyKey].forEach(e => combined.push({ ...e, source: 'Yearly' }));
+            }
+            
+            // 6. Filter out exclusions / exceptions registered for this specific day
+            if (appData.exceptions && appData.exceptions[dateKey]) {
+                const dayExclusions = appData.exceptions[dateKey];
+                combined = combined.filter(event => {
+                    return !dayExclusions.some(exc => 
+                        exc.time === event.time && 
+                        exc.message === event.message && 
+                        exc.source === event.source
+                    );
+                });
+            }
+            
+            combined.sort((a, b) => a.time.localeCompare(b.time));
+            return combined;
+        }
+
+        // --- Dynamic Single Calendar Render Function ---
+        function renderCalendar() {
+            const container = document.getElementById('single-time-calendar-container');
+            container.innerHTML = '';
+
+            const calendarCard = document.createElement('div');
+            calendarCard.className = "flex flex-col h-full";
+
+            const calendarHeader = document.createElement('div');
+            calendarHeader.className = "flex items-center justify-between pb-4 border-b border-gray-200 dark:border-zinc-800";
+            
+            calendarHeader.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <button onclick="navigateMonth(-1)" class="p-2 hover:bg-gray-150 dark:hover:bg-zinc-800 rounded-lg transition text-gray-655 dark:text-zinc-200"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <span class="font-black text-base md:text-lg text-gray-800 dark:text-zinc-100">${months[currentMonth].name} ${currentYear}</span>
+                    <button onclick="navigateMonth(1)" class="p-2 hover:bg-gray-150 dark:hover:bg-zinc-800 rounded-lg transition text-gray-655 dark:text-zinc-200"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                </div>
+                <div class="text-[10px] uppercase font-black tracking-widest text-[#2D6CDF] dark:text-sky-400">Master Schedule System</div>
+            `;
+            calendarCard.appendChild(calendarHeader);
+
+            const daysGridHeader = document.createElement('div');
+            daysGridHeader.className = "grid grid-cols-7 gap-1 text-center py-3 font-bold text-xs text-gray-400 dark:text-zinc-550";
+            daysOfWeek.forEach(day => {
+                daysGridHeader.innerHTML += `<div>${day}</div>`;
+            });
+            calendarCard.appendChild(daysGridHeader);
+
+            const daysGrid = document.createElement('div');
+            daysGrid.className = "grid grid-cols-7 gap-2 flex-1 items-stretch";
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            const adjustedOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+            const daysInMonth = months[currentMonth].days;
+            
+            for (let i = 0; i < adjustedOffset; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "min-h-[70px] md:min-h-[90px] bg-gray-50/20 dark:bg-zinc-900/10 rounded-xl opacity-30 border border-transparent";
+                daysGrid.appendChild(emptyCell);
+            }
+
+            const today = new Date();
+            const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                const daysEvents = getCombinedEventsForDate(currentYear, currentMonth, day);
+                const isToday = today.getDate() === day && today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+                const cellDate = new Date(currentYear, currentMonth, day);
+                const isPast = cellDate < todayMidnight;
+
+                const dayCell = document.createElement('button');
+                dayCell.type = "button";
+                dayCell.onclick = () => openModal('single', dateKey);
+                
+                dayCell.className = `relative min-h-[70px] md:min-h-[90px] p-2 rounded-xl flex flex-col justify-between items-start border-2 text-left transition active:scale-95 overflow-hidden ${
+                    isToday 
+                    ? 'border-[#2D6CDF] dark:border-sky-400 bg-[#2D6CDF]/5 dark:bg-sky-500/5 shadow-inner' 
+                    : 'border-gray-200 dark:border-zinc-800 hover:border-[#2D6CDF] dark:hover:border-sky-400 bg-gray-50/50 dark:bg-zinc-900/40'
+                }`;
+
+                // Contrast-balanced custom tag badges
+                const sourceColorMap = {
+                    'Single': 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
+                    'Daily': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                    'Weekly': 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-sky-300',
+                    'Monthly': 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                    'Yearly': 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
+                };
+
+                // Add a red diagonal line across already happened days
+                const pastOverlay = isPast ? `
+                    <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+                        <svg class="w-full h-full stroke-red-500 dark:stroke-red-600 opacity-40" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <line x1="0" y1="100" x2="100" y2="0" stroke-width="1.5" />
+                        </svg>
+                    </div>
+                ` : '';
+
+                dayCell.innerHTML = `
+                    <span class="text-xs font-black ${isToday ? 'text-[#2D6CDF] dark:text-sky-400' : 'text-gray-800 dark:text-zinc-100'}">${day}</span>
+                    <div class="w-full flex flex-col gap-1 mt-1 overflow-hidden">
+                        ${daysEvents.slice(0, 3).map(ev => {
+                            const sourceTag = ev.source ? ev.source.charAt(0) : 'S';
+                            const badgeStyle = sourceColorMap[ev.source] || 'bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300';
+                            return `
+                                <span class="block truncate text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 ${badgeStyle}">
+                                    <span class="text-[7px] font-black opacity-80 uppercase">[${sourceTag}]</span> ${ev.time} ${ev.message}
+                                </span>
+                            `;
+                        }).join('')}
+                        ${daysEvents.length > 3 ? `<span class="text-[8px] font-bold text-gray-400 dark:text-zinc-500 self-end">+${daysEvents.length - 3} more</span>` : ''}
+                    </div>
+                    ${pastOverlay}
+                `;
+                daysGrid.appendChild(dayCell);
+            }
+
+            calendarCard.appendChild(daysGrid);
+            container.appendChild(calendarCard);
+            lucide.createIcons();
+        }
+
+        function navigateMonth(direction) {
+            currentMonth += direction;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        // --- REPEATED SCHEDULES LAYER MANAGER ---
+        function openRepeatedOverlay(type) {
+            activeRepeatedType = type;
+            const overlay = document.getElementById('repeated-overlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+
+            const titleEl = document.getElementById('repeated-overlay-title');
+            const subEl = document.getElementById('repeated-overlay-subtitle');
+            const iconEl = document.getElementById('repeated-overlay-icon');
+
+            iconEl.removeAttribute('data-lucide');
+            if (type === 'daily') {
+                titleEl.textContent = "Daily Routines Workspace";
+                subEl.textContent = "Configure everyday alarms, reminders, meals, and tasks.";
+                iconEl.setAttribute('data-lucide', 'clock');
+            } else if (type === 'weekly') {
+                titleEl.textContent = "Weekly Schedules Workspace";
+                subEl.textContent = "Schedule routine events occurring on specified days of the week.";
+                iconEl.setAttribute('data-lucide', 'calendar-days');
+            } else if (type === 'monthly') {
+                titleEl.textContent = "Monthly Occurrences Workspace";
+                subEl.textContent = "Establish alerts bound to designated dates of every month.";
+                iconEl.setAttribute('data-lucide', 'calendar-range');
+            } else if (type === 'yearly') {
+                titleEl.textContent = "Yearly Reminders Workspace";
+                subEl.textContent = "Maintain anniversary tracking, birthdays, and yearly health reviews.";
+                iconEl.setAttribute('data-lucide', 'milestone');
+            }
+
+            lucide.createIcons();
+            renderActiveRepeatedView();
+        }
+
+        function closeRepeatedOverlay() {
+            const overlay = document.getElementById('repeated-overlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        // Router view rendering based on overlay type
+        function renderActiveRepeatedView() {
+            const content = document.getElementById('repeated-overlay-content');
+            if (!content) return;
+            content.innerHTML = '';
+
+            if (activeRepeatedType === 'daily') {
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full flex-1 w-full text-gray-800 dark:text-zinc-100">
+                        <div class="flex flex-col h-full border border-gray-200 dark:border-zinc-800 rounded-2xl p-4 bg-gray-50/50 dark:bg-zinc-900/40">
+                            <h3 class="text-sm font-bold text-gray-800 dark:text-zinc-100 mb-3 flex items-center gap-2">
+                                <i data-lucide="list-todo" class="w-4 h-4 text-[#2D6CDF] dark:text-sky-400"></i> Active Routines List
+                            </h3>
+                            <div class="flex-1 overflow-y-auto max-h-[350px] space-y-2 pr-1" id="overlay-daily-list"></div>
+                        </div>
+                        <div class="flex flex-col border border-gray-200 dark:border-zinc-800 rounded-2xl p-4 bg-gray-50/50 dark:bg-zinc-900/40">
+                            <h3 class="text-sm font-bold text-gray-800 dark:text-zinc-100 mb-3">Add Daily Alert</h3>
+                            <form id="overlay-daily-form" onsubmit="addDailyOverlay(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider mb-1 text-gray-500 dark:text-zinc-405">Alert Time</label>
+                                    <input type="time" id="overlay-daily-time" required class="w-full p-3 text-sm border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none bg-white dark:bg-zinc-800 text-gray-900 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider mb-1 text-gray-500 dark:text-zinc-405">Task / Message</label>
+                                    <input type="text" id="overlay-daily-message" placeholder="e.g. Afternoon tea & light walk" required class="w-full p-3 text-sm border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none bg-white dark:bg-zinc-800 text-gray-900 dark:text-white">
+                                </div>
+                                <button type="submit" class="w-full py-3 rounded-xl text-xs font-bold bg-[#2D6CDF] hover:bg-[#1E3A5F] dark:bg-sky-600 dark:hover:bg-sky-700 text-white transition flex items-center justify-center gap-2 shadow-md">
+                                    <i data-lucide="plus" class="w-4 h-4"></i> Add Routine Alarm
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                renderOverlayDailyList();
+            } else if (activeRepeatedType === 'weekly') {
+                content.innerHTML = `
+                    <div class="flex flex-col h-full flex-1 w-full text-gray-800 dark:text-zinc-100">
+                        <p class="text-xs text-gray-500 dark:text-zinc-400 mb-4 font-semibold">Click any day to open the Schedule Manager and configure recurring items.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4" id="overlay-weekly-list"></div>
+                    </div>
+                `;
+                renderOverlayWeeklyList();
+            } else if (activeRepeatedType === 'monthly') {
+                content.innerHTML = `
+                    <div class="flex flex-col h-full flex-1 w-full text-gray-800 dark:text-zinc-100">
+                        <p class="text-xs text-gray-500 dark:text-zinc-400 mb-4 font-semibold">Select a recurring day of the month (e.g., bills or checks scheduled on the 1st):</p>
+                        <div class="grid grid-cols-4 sm:grid-cols-7 gap-3 pb-4" id="overlay-monthly-list"></div>
+                    </div>
+                `;
+                renderOverlayMonthlyList();
+            } else if (activeRepeatedType === 'yearly') {
+                content.innerHTML = `
+                    <div class="flex flex-col h-full flex-1 w-full text-gray-800 dark:text-zinc-100" id="overlay-yearly-container">
+                        <!-- Dynamic Month matrix loads here -->
+                    </div>
+                `;
+                renderOverlayYearlyGrid();
+            }
+        }
+
+        // --- SUB-RENDERERS FOR REPEATED OVERLAY VIEWPORTS ---
+        function renderOverlayDailyList() {
+            const list = document.getElementById('overlay-daily-list');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            if (appData.dailyEvents.length === 0) {
+                list.innerHTML = `<p class="text-xs text-gray-500 dark:text-zinc-400 p-4 text-center">No routine tasks added.</p>`;
+                return;
+            }
+
+            appData.dailyEvents.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = "flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-gray-250 dark:border-zinc-800 rounded-xl text-xs shadow-sm";
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-extrabold text-[#2D6CDF] dark:text-sky-400 px-2 py-1 bg-blue-50 dark:bg-zinc-800 rounded-lg">${item.time}</span>
+                        <span class="text-gray-700 dark:text-zinc-200 font-semibold">${item.message}</span>
+                    </div>
+                    <button type="button" onclick="deleteDailyOverlay(${index})" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 p-2 rounded-xl transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                `;
+                list.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+
+        function addDailyOverlay(e) {
+            e.preventDefault();
+            const timeVal = document.getElementById('overlay-daily-time').value;
+            const msgVal = document.getElementById('overlay-daily-message').value;
+
+            appData.dailyEvents.push({ time: timeVal, message: msgVal });
+            appData.dailyEvents.sort((a,b) => a.time.localeCompare(b.time));
+            
+            saveLocalData();
+            renderOverlayDailyList();
+            
+            document.getElementById('overlay-daily-time').value = '';
+            document.getElementById('overlay-daily-message').value = '';
+            showToast('Daily routine added');
+        }
+
+        function deleteDailyOverlay(index) {
+            appData.dailyEvents.splice(index, 1);
+            saveLocalData();
+            renderOverlayDailyList();
+            showToast('Routine removed');
+        }
+
+        function renderOverlayWeeklyList() {
+            const container = document.getElementById('overlay-weekly-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            weekDays.forEach(day => {
+                const events = appData.weeklyEvents[day] || [];
+                const card = document.createElement('div');
+                card.className = "border-2 rounded-2xl border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-[#2D6CDF] dark:hover:border-sky-400 p-4 flex flex-col justify-between transition group shadow-sm";
+                card.innerHTML = `
+                    <div>
+                        <span class="text-[10px] uppercase font-black tracking-widest text-[#2D6CDF] dark:text-sky-400">Weekly System Trigger</span>
+                        <h4 class="font-extrabold text-base text-gray-800 dark:text-zinc-100 mt-1">${day}</h4>
+                        <p class="text-xs text-gray-400 dark:text-zinc-400 mt-1">${events.length} active event(s)</p>
+                    </div>
+                    <button onclick="openModal('weekly', '${day}')" class="mt-4 w-full py-2 bg-gray-50 dark:bg-zinc-800 dark:hover:bg-zinc-750 hover:bg-[#2D6CDF] hover:text-white dark:hover:bg-sky-600 text-gray-800 dark:text-gray-200 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 shadow-sm border border-gray-250 dark:border-zinc-750">
+                        Configure Event <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function renderOverlayMonthlyList() {
+            const container = document.getElementById('overlay-monthly-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let day = 1; day <= 31; day++) {
+                const events = appData.monthlyEvents[day] || [];
+                const cell = document.createElement('button');
+                cell.type = "button";
+                cell.onclick = () => openModal('monthly', day);
+                cell.className = `p-3 min-h-[70px] rounded-xl border-2 flex flex-col items-center justify-between text-xs transition active:scale-95 ${
+                    events.length > 0 
+                    ? 'border-[#2D6CDF] dark:border-sky-400 bg-[#2D6CDF]/5 dark:bg-sky-500/5' 
+                    : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-[#2D6CDF] dark:hover:border-sky-400'
+                }`;
+                cell.innerHTML = `
+                    <span class="font-extrabold text-gray-800 dark:text-zinc-100">Day ${day}</span>
+                    <span class="text-[9px] font-bold mt-1 text-gray-400 dark:text-zinc-450">${events.length} event(s)</span>
+                    ${events.length > 0 ? `<span class="w-2 h-2 bg-[#2D6CDF] dark:bg-sky-400 rounded-full mt-1 animate-pulse"></span>` : ''}
+                `;
+                container.appendChild(cell);
+            }
+        }
+
+        function renderOverlayYearlyGrid() {
+            const container = document.getElementById('overlay-yearly-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const grid = document.createElement('div');
+            grid.className = "grid grid-cols-2 md:grid-cols-4 gap-4 pb-4";
+
+            months.forEach((month, index) => {
+                const activeInMonthCount = Object.keys(appData.yearlyEvents)
+                    .filter(k => k.startsWith(`${String(index + 1).padStart(2, '0')}-`))
+                    .reduce((acc, k) => acc + appData.yearlyEvents[k].length, 0);
+
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.onclick = () => openOverlayYearlyDayPicker(index);
+                btn.className = `p-4 rounded-2xl border-2 text-left flex flex-col justify-between min-h-[100px] transition active:scale-95 ${
+                    activeInMonthCount > 0 
+                    ? 'border-[#2D6CDF] dark:border-sky-400 bg-[#2D6CDF]/5 dark:bg-sky-500/5' 
+                    : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-[#2D6CDF] dark:hover:border-sky-400'
+                }`;
+                btn.innerHTML = `
+                    <div>
+                        <span class="text-[9px] uppercase font-black tracking-widest text-gray-400 dark:text-zinc-500">Yearly Month</span>
+                        <h4 class="text-sm font-black text-gray-800 dark:text-zinc-100 mt-1">${month.name}</h4>
+                    </div>
+                    <span class="text-xs font-bold text-[#2D6CDF] dark:text-sky-400">${activeInMonthCount} event(s)</span>
+                `;
+                grid.appendChild(btn);
+            });
+            container.appendChild(grid);
+        }
+
+        function openOverlayYearlyDayPicker(monthIndex) {
+            const monthInfo = months[monthIndex];
+            const dateStr = String(monthIndex + 1).padStart(2, '0');
+            const container = document.getElementById('overlay-yearly-container');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div class="bg-white dark:bg-zinc-900 p-6 border rounded-2xl border-gray-200 dark:border-zinc-800 space-y-4 shadow-sm text-gray-855 dark:text-zinc-100">
+                    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-zinc-800">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold tracking-widest text-gray-400 dark:text-zinc-500">Day Picker Selection</span>
+                            <h3 class="text-base font-black text-gray-800 dark:text-white">${monthInfo.name} Schedule Grid</h3>
+                        </div>
+                        <!-- Consistent stylized Back Box Button -->
+                        <button onclick="renderOverlayYearlyGrid()" class="px-5 py-2.5 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-gray-300 dark:border-zinc-700 rounded-xl text-xs font-black transition active:scale-95 uppercase font-mono text-gray-700 dark:text-zinc-300 shadow-sm">
+                            Back
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-4 sm:grid-cols-7 gap-3">
+                        ${Array.from({ length: monthInfo.days }, (_, i) => i + 1).map(day => {
+                            const key = `${dateStr}-${String(day).padStart(2, '0')}`;
+                            const count = (appData.yearlyEvents[key] || []).length;
+                            return `
+                                <button type="button" onclick="openModal('yearly', '${key}')" class="p-3 min-h-[60px] border-2 text-xs font-bold rounded-xl flex flex-col justify-between items-center transition active:scale-95 ${count > 0 ? 'border-[#2D6CDF] dark:border-sky-400 bg-[#2D6CDF]/5 dark:bg-sky-500/5 font-black text-[#2D6CDF] dark:text-sky-400' : 'border-gray-200 dark:border-zinc-800 hover:border-[#2D6CDF] dark:hover:border-sky-400 bg-white dark:bg-zinc-900 text-gray-855 dark:text-zinc-100'}">
+                                    <span>${day}</span>
+                                    <span class="text-[8px] font-black mt-1 ${count > 0 ? 'text-[#2D6CDF] dark:text-sky-400' : 'text-gray-400 dark:text-zinc-550'}">${count} ev</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderAllDropdowns() {
+            renderContacts();
+            renderCalendar();
+        }
+
+        // --- Event Modals and Forms ---
+        function openModal(type, key) {
+            activeModalScope = { type, key };
+            
+            const modal = document.getElementById('calendar-modal');
+            const box = document.getElementById('modal-box');
+            const title = document.getElementById('modal-title');
+            
+            if (type === 'single') title.textContent = `Schedule: ${key}`;
+            else if (type === 'weekly') title.textContent = `Weekly: ${key}s`;
+            else if (type === 'monthly') title.textContent = `Monthly: Day ${key}`;
+            else if (type === 'yearly') {
+                const [m, d] = key.split('-');
+                title.textContent = `Yearly: ${months[parseInt(m) - 1].name} ${d}`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            renderModalEventsList();
+        }
+
+        // Clean modal close
+        function closeModal() {
+            const modal = document.getElementById('calendar-modal');
+            const box = document.getElementById('modal-box');
+            
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function getEventsArray() {
+            const { type, key } = activeModalScope;
+            if (type === 'single') return appData.events[key] || [];
+            if (type === 'weekly') return appData.weeklyEvents[key] || [];
+            if (type === 'monthly') return appData.monthlyEvents[key] || [];
+            if (type === 'yearly') return appData.yearlyEvents[key] || [];
+            return [];
+        }
+
+        function saveEventsArray(arr) {
+            const { type, key } = activeModalScope;
+            if (type === 'single') {
+                if (arr.length === 0) delete appData.events[key];
+                else appData.events[key] = arr;
+            } else if (type === 'weekly') {
+                if (arr.length === 0) delete appData.weeklyEvents[key];
+                else appData.weeklyEvents[key] = arr;
+            } else if (type === 'monthly') {
+                if (arr.length === 0) delete appData.monthlyEvents[key];
+                else appData.monthlyEvents[key] = arr;
+            } else if (type === 'yearly') {
+                if (arr.length === 0) delete appData.yearlyEvents[key];
+                else appData.yearlyEvents[key] = arr;
+            }
+            saveLocalData();
+            renderAllDropdowns();
+            renderActiveRepeatedView(); 
+        }
+
+        function renderModalEventsList() {
+            const container = document.getElementById('modal-events-list');
+            container.innerHTML = '';
+
+            const { type, key } = activeModalScope;
+            let arr = [];
+
+            // Compile the total list for specific days
+            if (type === 'single') {
+                const [y, m, d] = key.split('-').map(Number);
+                arr = getCombinedEventsForDate(y, m - 1, d);
+            } else {
+                arr = getEventsArray();
+            }
+
+            if (arr.length === 0) {
+                container.innerHTML = `
+                    <div class="h-24 flex items-center justify-center border-2 border-dashed border-gray-250 dark:border-zinc-800 rounded-xl">
+                        <p class="text-xs text-gray-500 dark:text-zinc-400 font-bold">No active reminders configured for this segment.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Contrast-balanced custom tag badges
+            const sourceColorMap = {
+                'Single': 'bg-violet-100 text-violet-755 dark:bg-violet-950/50 dark:text-violet-300',
+                'Daily': 'bg-emerald-100 text-emerald-755 dark:bg-emerald-950/50 dark:text-emerald-300',
+                'Weekly': 'bg-blue-100 text-blue-755 dark:bg-blue-950/50 dark:text-sky-300',
+                'Monthly': 'bg-amber-100 text-amber-755 dark:bg-amber-950/50 dark:text-amber-300',
+                'Yearly': 'bg-rose-100 text-rose-755 dark:bg-rose-950/50 dark:text-rose-300'
+            };
+
+            arr.forEach((ev, index) => {
+                const sourceBadge = type === 'single' && ev.source ? `
+                    <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded ${sourceColorMap[ev.source] || 'bg-gray-100 text-gray-700'} mr-2">
+                        ${ev.source}
+                    </span>
+                ` : '';
+
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-2.5 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-850 rounded-lg mb-2 text-xs shadow-sm";
+                row.innerHTML = `
+                    <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                        ${sourceBadge}
+                        <span class="font-extrabold text-[#2D6CDF] dark:text-sky-400 shrink-0">${ev.time}</span>
+                        <span class="text-gray-700 dark:text-zinc-200 font-medium truncate">${ev.message}</span>
+                    </div>
+                    <!-- Delete calls specific exclusion system on single-day mode, or default template array deletion on template modes -->
+                    <button type="button" onclick="deleteModalEvent(${index}, '${ev.source || ''}', '${ev.time}', '${ev.message.replace(/'/g, "\\'")}')" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 p-1.5 rounded-lg transition shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                `;
+                container.appendChild(row);
+            });
+            lucide.createIcons();
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const timeField = document.getElementById('event-time');
+            const messageField = document.getElementById('event-message');
+
+            const { type, key } = activeModalScope;
+
+            if (type === 'single') {
+                appData.events[key] = appData.events[key] || [];
+                appData.events[key].push({
+                    time: timeField.value,
+                    message: messageField.value
+                });
+                appData.events[key].sort((a,b) => a.time.localeCompare(b.time));
+                saveLocalData();
+                renderAllDropdowns();
+                renderModalEventsList();
+            } else {
+                const arr = getEventsArray();
+                arr.push({
+                    time: timeField.value,
+                    message: messageField.value
+                });
+                arr.sort((a,b) => a.time.localeCompare(b.time));
+                saveEventsArray(arr);
+                renderModalEventsList();
+            }
+
+            timeField.value = '';
+            messageField.value = '';
+            showToast('Reminder added successfully');
+        }
+
+        function deleteModalEvent(index, source, time, message) {
+            const { type, key } = activeModalScope;
+
+            if (type === 'single') {
+                if (source === 'Single') {
+                    // It is a direct single event. Remove it from appData.events[key]
+                    let dayEvents = appData.events[key] || [];
+                    dayEvents = dayEvents.filter(ev => !(ev.time === time && ev.message === message));
+                    if (dayEvents.length === 0) {
+                        delete appData.events[key];
+                    } else {
+                        appData.events[key] = dayEvents;
+                    }
+                } else {
+                    // It is a recurring template occurrence. Exclude/exception it for this specific date
+                    appData.exceptions = appData.exceptions || {};
+                    appData.exceptions[key] = appData.exceptions[key] || [];
+                    appData.exceptions[key].push({ time, message, source });
+                }
+                saveLocalData();
+                renderAllDropdowns();
+                renderModalEventsList();
+                showToast('Removed from this specific date');
+            } else {
+                // Modifying default repeated template rule arrays
+                const arr = getEventsArray();
+                arr.splice(index, 1);
+                saveEventsArray(arr);
+                renderModalEventsList();
+                showToast('Template rule deleted');
+            }
+        }
+
+    </script>
+</body>
+</html>
